@@ -27,11 +27,17 @@ async def analyze_resume_v_job(resume_text: str, job_description: str) -> Analys
         config=genai.types.GenerateContentConfig(
             temperature=0.3,
             max_output_tokens=4096,
-            response_mime_type="application/json",
         ),
     )
     
-    analysis_data = json.loads(response.text)
+    # Extract text and clean potential markdown code blocks
+    text = response.text.strip()
+    if text.startswith("```json"):
+        text = text.replace("```json", "", 1).replace("```", "", 1).strip()
+    elif text.startswith("```"):
+        text = text.replace("```", "", 1).replace("```", "", 1).strip()
+    
+    analysis_data = json.loads(text)
     
     # Post-processing validation & adjustment
     analysis = AnalysisResponse.model_validate(analysis_data)
