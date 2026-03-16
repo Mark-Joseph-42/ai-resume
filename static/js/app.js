@@ -112,6 +112,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Update Recommendations
         renderRecommendations(data);
+
+        // Update Verdict
+        renderVerdict(data);
+    }
+
+    function renderVerdict(data) {
+        const section = document.getElementById('verdict-section');
+        section.classList.remove('hidden');
+
+        // Strengths
+        const strengthsList = document.getElementById('strengths-list');
+        strengthsList.innerHTML = '';
+        data.strengths.forEach(s => {
+            const li = document.createElement('li');
+            li.className = 'flex items-start gap-2 text-sm text-slate-600';
+            li.innerHTML = `<span class="text-emerald-500 mt-1">●</span> <span>${s}</span>`;
+            strengthsList.appendChild(li);
+        });
+
+        // Weaknesses
+        const weaknessesList = document.getElementById('weaknesses-list');
+        weaknessesList.innerHTML = '';
+        data.weaknesses.forEach(w => {
+            const li = document.createElement('li');
+            li.className = 'flex items-start gap-2 text-sm text-slate-600';
+            li.innerHTML = `<span class="text-rose-500 mt-1">●</span> <span>${w}</span>`;
+            weaknessesList.appendChild(li);
+        });
+
+        // Detailed Analysis
+        const detailedVerdict = document.getElementById('detailed-verdict');
+        detailedVerdict.textContent = data.detailed_analysis;
     }
 
     function renderRecommendations(data) {

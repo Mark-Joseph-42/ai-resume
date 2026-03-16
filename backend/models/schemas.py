@@ -15,6 +15,9 @@ class AnalysisResponse(BaseModel):
     recommended_keywords: List[str]
     project_suggestions: List[dict]  # {"title": ..., "description": ..., "skills_covered": [...]}
     summary: str
+    strengths: List[str]
+    weaknesses: List[str]
+    detailed_analysis: str
 
 class AnalysisRequest(BaseModel):
     resume_text: str = Field(..., min_length=50)

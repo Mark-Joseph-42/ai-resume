@@ -11,6 +11,8 @@ analysis by comparing a candidate's resume against a job description.
 5. Calculate the overall match percentage using:
    Match% = (sum of relevance_scores of matched skills) / (total required skills) × 100
 6. Suggest specific online courses, resume keywords, and project ideas to bridge the gap.
+7. Provide a "Verdict": Explain WHY the resume is a good or bad fit based on specific evidence from the text.
+8. List at least 3 Strengths and 3 Weaknesses/Gaps.
 
 ## RESUME TEXT
 {{ resume_text }}
@@ -21,7 +23,6 @@ analysis by comparing a candidate's resume against a job description.
 ## OUTPUT FORMAT
 You MUST respond with ONLY a valid JSON object matching this exact schema.
 Do NOT include any text before or after the JSON.
-Do NOT wrap the JSON in markdown code fences.
 
 {
   "match_percentage": <float 0-100>,
@@ -49,5 +50,8 @@ Do NOT wrap the JSON in markdown code fences.
       "skills_covered": ["<skill 1>", "<skill 2>"]
     }
   ],
-  "summary": "<2-3 sentence executive summary of the candidate's fit>"
+  "summary": "<2-3 sentence executive summary>",
+  "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
+  "weaknesses": ["<weakness/gap 1>", "<weakness/gap 2>", "<weakness/gap 3>"],
+  "detailed_analysis": "<A thorough paragraph explaining the reasoning behind the match score and candidate fit. Be specific about what is missing or what makes them stand out.>"
 }
