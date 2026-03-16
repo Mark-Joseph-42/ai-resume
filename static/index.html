@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI-Powered Resume Analyzer Dashboard</title>
+<!-- Tailwind CSS with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style data-purpose="custom-styling">
+    /* Custom scrollbar to match Streamlit aesthetics */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+    
+    /* Streamlit-like Sidebar styling */
+    .sidebar-bg {
+      background-color: #0e1117;
+      color: #fafafa;
+    }
+    
+    /* Plotly Gauge Emulation */
+    .gauge-container {
+      position: relative;
+      width: 150px;
+      height: 75px;
+      overflow: hidden;
+    }
+    .gauge-arc {
+      width: 150px;
+      height: 150px;
+      border: 15px solid #e5e7eb;
+      border-top-color: #3b82f6;
+      border-right-color: #3b82f6;
+      border-radius: 50%;
+      transform: rotate(45deg);
+    }
+
+    /* Radar Chart Emulation (SVG) */
+    .radar-svg {
+      filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.1));
+    }
+  </style>
+</head>
+<body class="bg-[#f0f2f6] font-sans text-slate-800">
+<div class="flex min-h-screen">
+<!-- BEGIN: Sidebar -->
+<aside class="sidebar-bg w-80 p-6 flex flex-col gap-8 shrink-0 border-r border-slate-700">
+<div data-purpose="sidebar-header">
+<h1 class="text-xl font-bold flex items-center gap-2">
+<span class="text-blue-500">◈</span> AI Resume Analyzer
+        </h1>
+<p class="text-xs text-slate-400 mt-1">v2.4.0-stable</p>
+</div>
+<div class="flex flex-col gap-6" data-purpose="api-configuration">
+<h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">API Configuration</h2>
+<!-- API Key Input -->
+<div class="flex flex-col gap-2">
+<label class="text-xs" for="api-key">Google API Key</label>
+<input class="bg-[#262730] border-none rounded-md text-sm focus:ring-1 focus:ring-blue-500 py-2" id="api-key" placeholder="Enter your key..." type="password" value=""/>
+<span class="text-[10px] text-slate-500 italic">Keys are handled by the backend.</span>
+</div>
+<!-- Model Selection -->
+<div class="flex flex-col gap-2">
+<label class="text-xs" for="model-select">Model Selection</label>
+<select class="bg-[#262730] border-none rounded-md text-sm focus:ring-1 focus:ring-blue-500 py-2" id="model-select">
+<option selected="">Gemma-3-27b-it</option>
+<option>Gemma-2-9b-it</option>
+<option>Claude-3.5-Sonnet</option>
+</select>
+</div>
+<!-- Temperature Slider -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center">
+<label class="text-xs" for="temp-slider">Temperature</label>
+<span class="text-xs font-mono text-blue-400" id="temp-val">0.3</span>
+</div>
+<input class="accent-blue-500 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer" id="temp-slider" max="1" min="0" step="0.1" type="range" value="0.3"/>
+<div class="flex justify-between text-[10px] text-slate-500 px-1">
+<span>Precise</span>
+<span>Creative</span>
+</div>
+</div>
+</div>
+<div class="mt-auto pt-6 border-t border-slate-700 text-[10px] text-slate-500">
+        Connected to Enterprise Engine <br/>
+        Uptime: 14h 22m
+      </div>
+</aside>
+<!-- END: Sidebar -->
+<!-- BEGIN: Main Content Area -->
+<main class="flex-1 overflow-y-auto p-8 flex flex-col gap-6">
+<!-- BEGIN: Top Panels -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<!-- Left Panel: File Uploaders -->
+<section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200" data-purpose="file-uploaders">
+<h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+<svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+            File Uploaders
+          </h3>
+<div class="flex flex-col gap-4">
+<!-- PDF Upload Zone -->
+<label for="resume-upload" class="contents">
+<div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-lg p-8 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer">
+<span class="text-sm font-medium" id="file-name-label">Upload Candidate Resume (PDF)</span>
+<span class="text-xs text-slate-500 mt-1">Drag and drop or click to browse</span>
+<input type="file" id="resume-upload" accept=".pdf" class="hidden" />
+</div>
+</label>
+<!-- Job Description Area -->
+<div class="flex flex-col gap-2">
+<label class="text-sm font-medium text-slate-600">Job Description</label>
+<textarea id="job-description" class="border-slate-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Paste the target job description here..." rows="8"></textarea>
+</div>
+<button id="analyze-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors self-end flex items-center gap-2">
+              <span id="btn-text">Execute Analysis</span>
+              <svg id="loading-spinner" class="hidden animate-spin h-4 w-4 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            </button>
+</div>
+</section>
+<!-- Right Panel: Extraction Preview -->
+<section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col h-full" data-purpose="extraction-preview">
+<h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+<svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+            Extraction Preview
+          </h3>
+<!-- Tabs Placeholder -->
+<div class="flex gap-4 border-b border-slate-200 mb-4">
+<button class="pb-2 border-b-2 border-blue-600 text-sm font-medium text-blue-600">Structured JSON</button>
+<button class="pb-2 border-b-2 border-transparent text-sm font-medium text-slate-500">Raw Text</button>
+</div>
+<div class="bg-slate-50 rounded-lg p-4 font-mono text-xs text-slate-700 overflow-y-auto max-h-[380px] flex-1">
+<pre id="json-preview">// Analysis results will appear here...</pre>
+</div>
+</section>
+</div>
+<!-- END: Top Panels -->
+<!-- BEGIN: Deep Analysis Section -->
+<section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200" data-purpose="deep-analysis">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+            Deep Analysis Results
+          </h3>
+<!-- Tooltip Trigger -->
+<div class="group relative cursor-help">
+<div class="flex items-center gap-1 text-slate-400 text-xs">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" fill-rule="evenodd"></path></svg>
+<span>Methodology Info</span>
+</div>
+<!-- Tooltip Box -->
+<div class="invisible group-hover:visible absolute right-0 bottom-full mb-2 w-64 p-3 bg-slate-800 text-white text-[10px] rounded-lg shadow-xl z-50">
+<p class="font-bold mb-1">Cosine Similarity Methodology</p>
+              Scores are calculated by transforming resume and job description into high-dimensional vector embeddings using the model's latent space. A value of 1.0 represents an exact semantic match.
+            </div>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+<!-- Gauge Chart Area -->
+<div class="flex flex-col items-center">
+<p class="text-sm font-semibold text-slate-500 mb-4">Overall Skill Match %</p>
+<div class="gauge-container">
+<div class="gauge-arc" id="gauge-bar" style="border-top-color: #e5e7eb; border-right-color: #e5e7eb; transform: rotate(45deg);"></div>
+<div class="absolute bottom-0 w-full text-center">
+<span class="text-2xl font-bold" id="match-score">0%</span>
+</div>
+</div>
+<div class="mt-4 flex gap-4 text-[10px] text-slate-500">
+<div class="flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-blue-500"></span> Current Match
+              </div>
+<div class="flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-slate-200"></span> Target
+              </div>
+</div>
+</div>
+<div id="radar-container" class="flex flex-col items-center">
+<p class="text-sm font-semibold text-slate-500 mb-4">Skill Gap Analysis</p>
+<svg id="radar-chart" class="radar-svg" height="200" viewbox="0 0 200 200" width="200">
+<!-- Background layers -->
+<polygon points="100,20 170,60 170,140 100,180 30,140 30,60" stroke="#e5e7eb" stroke-width="1" fill="none"></polygon>
+<polygon points="100,60 135,80 135,120 100,140 65,120 65,80" stroke="#e5e7eb" stroke-width="1" fill="none"></polygon>
+<!-- Placeholder label -->
+<text fill="#64748b" font-size="10" text-anchor="middle" x="100" y="100">Ready</text>
+</svg>
+</div>
+</div>
+</section>
+<!-- END: Deep Analysis Section -->
+
+<!-- BEGIN: Recommendations Section -->
+<section id="recommendations-section" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Course Recommendations -->
+  <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+    <h4 class="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+      <svg class="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20"><path d="M10.394 2.827c.097-.033.202-.033.298 0l7 2.4a1 1 0 010 1.916l-7 2.4a1 1 0 01-.298 0l-7-2.4a1 1 0 010-1.916l7-2.4z"></path><path d="M7 10.274l-.813-.279L3 11.028V14c0 1.105 1.79 2 4 2s4-.895 4-2v-2.972l-3.187-1.074A.996.996 0 017 10.274z"></path><path d="M13 10.274l-.813-.279-3.187 1.074v2.972c0 1.105 1.79 2 4 2s4-.895 4-2v-2.972l-3.187-1.074a.996.996 0 00-.813-.279z"></path></svg>
+      Recommended Courses
+    </h4>
+    <div id="course-list" class="flex flex-col gap-3">
+      <!-- Dynamic course items -->
+    </div>
+  </div>
+
+  <!-- Missing Skills & Keywords -->
+  <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+    <h4 class="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+      <svg class="w-4 h-4 text-rose-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path></svg>
+      Missing Skills
+    </h4>
+    <div id="keyword-list" class="flex flex-wrap gap-2">
+      <!-- Dynamic keyword tags -->
+    </div>
+  </div>
+
+  <!-- Project Suggestions -->
+  <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+    <h4 class="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+      <svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path></svg>
+      Project Suggestions
+    </h4>
+    <div id="project-list" class="flex flex-col gap-4">
+      <!-- Dynamic project items -->
+    </div>
+  </div>
+</section>
+<!-- BEGIN: Developer Logs Expander -->
+<footer class="mt-auto" data-purpose="developer-logs">
+<details class="group bg-slate-800 rounded-lg overflow-hidden transition-all duration-300">
+<summary class="flex items-center justify-between p-4 cursor-pointer text-slate-300 hover:text-white select-none">
+<div class="flex items-center gap-2">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+<span class="text-sm font-medium">Developer Logs</span>
+</div>
+<svg class="w-4 h-4 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</summary>
+<div id="log-container" class="p-4 bg-[#1e1e26] border-t border-slate-700 font-mono text-xs text-green-400 max-h-48 overflow-y-auto">
+<p class="text-slate-500">[System] Awaiting input...</p>
+</div>
+</details>
+</footer>
+<script src="js/app.js"></script>
+<!-- END: Developer Logs Expander -->
+</main>
+<!-- END: Main Content Area -->
+</div>
+</body></html>
