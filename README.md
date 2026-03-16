@@ -129,7 +129,7 @@ cp .env.example .env
 ```bash
 # Start the server
 source venv/bin/activate
-python3 backend/main.py
+python3 run.py
 ```
 
 Open your browser and navigate to: **http://localhost:8000**
