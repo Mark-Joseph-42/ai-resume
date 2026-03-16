@@ -116,10 +116,9 @@ source venv/bin/activate
 # 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Configure your API key
-cp .env.example .env
-# Edit .env and add your Google AI Studio API key:
-# GOOGLE_API_KEY=your_actual_key_here
+# 4. (Optional) Configure your own API key
+# The project comes with a pre-configured key for immediate use.
+# To use your own, edit the .env file.
 ```
 
 ---
